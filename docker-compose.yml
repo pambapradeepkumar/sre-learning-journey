@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+    volumes:
+      - ./app/backend:/app
+    networks:
+      - taskapp-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/react/Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - taskapp-network
+
+networks:
+  taskapp-network:
+    driver: bridge
