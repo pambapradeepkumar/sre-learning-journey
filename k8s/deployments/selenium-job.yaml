@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: selenium-e2e-tests
+  namespace: taskapp
+spec:
+  template:
+    spec:
+      containers:
+      - name: selenium-tests
+        image: taskapp-selenium:v1
+        imagePullPolicy: Never
+        env:
+        - name: FRONTEND_URL
+          value: "http://frontend.taskapp.svc.cluster.local"
+      restartPolicy: Never
+  backoffLimit: 1
