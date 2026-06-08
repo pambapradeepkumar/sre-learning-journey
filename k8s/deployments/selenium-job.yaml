@@ -6,12 +6,29 @@ metadata:
 spec:
   template:
     spec:
-      containers:
+      initContainers:
       - name: selenium-tests
         image: taskapp-selenium:v1
         imagePullPolicy: Never
-        env:
-        - name: FRONTEND_URL
-          value: "http://frontend.taskapp.svc.cluster.local"
+        command: ["sh", "-c"]
+        args:
+          - |
+            python3 e2e_tests.py
+            allure generate /tmp/allure-results -o /allure-report --clean
+            cp -r /allure-report/* /shared/
+        volumeMounts:
+        - name: shared-report
+          mountPath: /shared
+      containers:
+      - name: report-server
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: shared-report
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: shared-report
+        emptyDir: {}
       restartPolicy: Never
   backoffLimit: 1

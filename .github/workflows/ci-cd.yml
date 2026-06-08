@@ -63,13 +63,56 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [build-and-push, test]
     if: always()
 
     steps:
-    - name: Pipeline status
-      run: |
-        echo "Pipeline completed!"
-        echo "Backend image: ${{ secrets.DOCKERHUB_USERNAME }}/taskapp-backend:latest"
-        echo "Frontend image: ${{ secrets.DOCKERHUB_USERNAME }}/taskapp-frontend:latest"
-        echo "Selenium image: ${{ secrets.DOCKERHUB_USERNAME }}/taskapp-selenium:latest"
+    - name: Slack notification success
+      if: ${{ needs.build-and-push.result == 'success' && needs.test.result == 'success' }}
+      uses: slackapi/slack-github-action@v1.26.0
+      with:
+        payload: |
+          {
+            "text": "✅ *CI/CD Pipeline Passed!*",
+            "attachments": [
+              {
+                "color": "good",
+                "fields": [
+                  { "title": "Repository", "value": "${{ github.repository }}", "short": true },
+                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                  { "title": "Triggered by", "value": "${{ github.actor }}", "short": true },
+                  { "title": "Build", "value": "#${{ github.run_number }}", "short": true },
+                  { "title": "Status", "value": "All jobs passed ✅", "short": false },
+                  { "title": "Images pushed", "value": "${{ secrets.DOCKERHUB_USERNAME }}/taskapp-backend:latest\n${{ secrets.DOCKERHUB_USERNAME }}/taskapp-frontend:latest\n${{ secrets.DOCKERHUB_USERNAME }}/taskapp-selenium:latest", "short": false }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+    - name: Slack notification failure
+      if: ${{ needs.build-and-push.result == 'failure' || needs.test.result == 'failure' }}
+      uses: slackapi/slack-github-action@v1.26.0
+      with:
+        payload: |
+          {
+            "text": "❌ *CI/CD Pipeline Failed!*",
+            "attachments": [
+              {
+                "color": "danger",
+                "fields": [
+                  { "title": "Repository", "value": "${{ github.repository }}", "short": true },
+                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                  { "title": "Triggered by", "value": "${{ github.actor }}", "short": true },
+                  { "title": "Build", "value": "#${{ github.run_number }}", "short": true },
+                  { "title": "Status", "value": "Pipeline failed ❌ — check logs", "short": false },
+                  { "title": "Logs", "value": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}", "short": false }
+                ]
+              }
+            ]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
