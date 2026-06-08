@@ -6,7 +6,7 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/tasks/")
+    fetch("/api/tasks/")
       .then((res) => res.json())
       .then((data) => {
         setTasks(data);
